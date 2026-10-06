@@ -1,0 +1,33 @@
+# Generated projects, builds, and packaging
+*.xcodeproj/
+*.xcworkspace/
+DerivedData/
+build/
+dist/
+Payload/
+*.ipa
+*.xcresult/
+*.dSYM/
+*.log
+.build/
+# Local recordings/scripts must never enter a public repository
+*.mov
+*.mp4
+*.m4v
+Recordings/
+PersonalScripts/
+*.mobileprovision
+*.p12
+*.p8
+*.pem
+.env*
+# Editor and system files
+.DS_Store
+Thumbs.db
+Desktop.ini
+.idea/
+.vscode/
+*.swp
+xcuserdata/
+__pycache__/
+.venv/
