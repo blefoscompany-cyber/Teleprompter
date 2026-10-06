@@ -38,6 +38,8 @@ jobs:
     steps:
       - name: Check out source
         uses: actions/checkout@v4
+      - name: Check packaging and runner-selection tools
+        run: python3 scripts/test_build_tools.py
       - name: Show the runner's stable Xcode and SDK
         run: |
           set -euo pipefail

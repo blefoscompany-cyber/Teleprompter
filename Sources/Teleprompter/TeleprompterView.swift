@@ -95,7 +95,7 @@ struct TeleprompterView: UIViewRepresentable {
             guard let previousTimestamp else { return }
             let elapsed = min(link.timestamp - previousTimestamp, 0.1)
             let maximum = max(0, view.contentSize.height - view.bounds.height)
-            let next = min(maximum, max(0, view.contentOffset.y) + speed * elapsed)
+            let next = min(maximum, max(0, view.contentOffset.y) + CGFloat(speed * elapsed))
             view.setContentOffset(CGPoint(x: 0, y: next), animated: false)
             if next >= maximum {
                 controller.pause()
