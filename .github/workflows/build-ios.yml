@@ -1,0 +1,104 @@
+name: Build iOS IPA
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - 'Sources/**'
+      - 'Resources/**'
+      - 'Tests/**'
+      - 'scripts/**'
+      - 'project.yml'
+      - '.github/workflows/build-ios.yml'
+  pull_request:
+    paths:
+      - 'Sources/**'
+      - 'Resources/**'
+      - 'Tests/**'
+      - 'scripts/**'
+      - 'project.yml'
+      - '.github/workflows/build-ios.yml'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ios-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    # A standard GitHub-hosted runner; never a paid larger runner.
+    runs-on: macos-15
+    timeout-minutes: 35
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v4
+      - name: Show the runner's stable Xcode and SDK
+        run: |
+          set -euo pipefail
+          xcodebuild -version
+          xcrun --sdk iphoneos --show-sdk-version
+      - name: Install project generator
+        run: |
+          set -euo pipefail
+          brew install xcodegen
+          xcodegen --version
+      - name: Generate Xcode project
+        run: |
+          set -euo pipefail
+          xcodegen generate --spec project.yml
+          plutil -lint Resources/Info.plist
+          mkdir -p build
+      - name: Run format-selection and persistence tests
+        run: |
+          set -euo pipefail
+          xcrun simctl list devices available --json > build/simulators.json
+          SIMULATOR_ID=$(python3 scripts/select_simulator.py build/simulators.json)
+          xcodebuild test \
+            -project Teleprompter.xcodeproj \
+            -scheme Teleprompter \
+            -configuration Debug \
+            -destination "platform=iOS Simulator,id=$SIMULATOR_ID" \
+            -derivedDataPath build/TestDerivedData \
+            -resultBundlePath build/UnitTests.xcresult \
+            CODE_SIGNING_ALLOWED=NO \
+            CODE_SIGNING_REQUIRED=NO \
+            2>&1 | tee build/tests.log
+      - name: Build unsigned physical-iPhone app
+        run: |
+          set -euo pipefail
+          xcodebuild build \
+            -project Teleprompter.xcodeproj \
+            -scheme Teleprompter \
+            -configuration Release \
+            -sdk iphoneos \
+            -destination 'generic/platform=iOS' \
+            -derivedDataPath build/DerivedData \
+            CODE_SIGNING_ALLOWED=NO \
+            CODE_SIGNING_REQUIRED=NO \
+            CODE_SIGN_IDENTITY="" \
+            2>&1 | tee build/build.log
+      - name: Package and verify IPA
+        run: bash scripts/package-ipa.sh
+      - name: Upload IPA
+        uses: actions/upload-artifact@v4
+        with:
+          name: Teleprompter-IPA
+          path: dist/Teleprompter.ipa
+          if-no-files-found: error
+          retention-days: 7
+      - name: Upload diagnostic logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: Build-Logs
+          path: |
+            build/*.log
+            build/UnitTests.xcresult
+          if-no-files-found: ignore
+          retention-days: 3
