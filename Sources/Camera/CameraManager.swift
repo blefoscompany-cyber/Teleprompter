@@ -106,8 +106,8 @@ final class CameraManager: NSObject, ObservableObject, AVCaptureFileOutputRecord
         }
     }
 
-    private func configure(side requestedSide: CameraSide, quality requestedQuality: RecordingQuality) throws {
-        guard !configured || side != requestedSide || quality != requestedQuality else { return }
+    private func configure(side requestedSide: CameraSide, quality requestedQuality: RecordingQuality, force: Bool = false) throws {
+        guard force || !configured || side != requestedSide || quality != requestedQuality else { return }
         publish { $0.isConfiguring = true; $0.isReady = false }
         defer { publish { $0.isConfiguring = false } }
         guard AVCaptureDevice.authorizationStatus(for: .video) == .authorized,
@@ -284,7 +284,7 @@ final class CameraManager: NSObject, ObservableObject, AVCaptureFileOutputRecord
     func fileOutput(_ output: AVCaptureFileOutput, didStartRecordingTo fileURL: URL, from connections: [AVCaptureConnection]) {
         sessionQueue.async {
             if self.queuePhase == .finishing {
-                self.output.stopRecording()
+                if self.output.isRecording { self.output.stopRecording() }
                 return
             }
             self.queuePhase = .recording
@@ -353,7 +353,14 @@ final class CameraManager: NSObject, ObservableObject, AVCaptureFileOutputRecord
         if let error { log.error("Capture session error: \(error.localizedDescription, privacy: .public)") }
         publish { $0.isReady = false }
         if error?.code == .mediaServicesWereReset, queuePhase == .idle {
-            resumeOnQueue()
+            // A media-service reset can discard the active device format.
+            // Reapply the exact requested format before reporting readiness again.
+            do {
+                try configure(side: side, quality: quality, force: true)
+                resumeOnQueue()
+            } catch {
+                report(error, explanation: "iOS reset the camera service. Tap Retry camera to reconnect it.")
+            }
         } else {
             stopOnQueue()
             publish { $0.message = "iOS interrupted the camera. Any recording file will be kept. Close other camera apps and tap Retry camera." }

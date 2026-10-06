@@ -62,6 +62,7 @@ struct MainCameraView: View {
         .background(Color.black)
         .task {
             camera.onRecordingFinished = { url in recordings.accept(url) }
+            if let message = recordings.message { alertMessage = message; recordings.message = nil }
             await authorizeAndActivate()
         }
         .onChange(of: scenePhase) { _, value in
@@ -190,7 +191,13 @@ struct MainCameraView: View {
         .padding()
     }
     @MainActor private func authorizeAndActivate() async {
-        guard !isAuthorizing, !camera.phase.isBusy else { return }
+        guard !isAuthorizing else { return }
+        if camera.phase.isBusy {
+            // Restore the desired foreground state even if a backgrounded take
+            // is still finalizing. The capture queue resumes after finalization.
+            activateIfForeground()
+            return
+        }
         isAuthorizing = true
         defer { isAuthorizing = false }
         permissionExplanation = await PermissionManager.capturePermissions()
@@ -201,7 +208,7 @@ struct MainCameraView: View {
         }
     }
     private func activateIfForeground() {
-        guard scenePhase == .active, permissionExplanation == nil, !camera.phase.isBusy else { return }
+        guard scenePhase == .active, permissionExplanation == nil else { return }
         camera.activate(side: settings.camera, quality: settings.quality)
     }
     private func updateScreenAwake() {

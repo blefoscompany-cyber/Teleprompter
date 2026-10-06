@@ -43,6 +43,10 @@ final class RecordingStore: ObservableObject {
 
     func accept(_ url: URL) {
         reload()
+        guard FileManager.default.fileExists(atPath: url.path) else {
+            message = "No recording file was created. Close other camera apps, choose a lower recording quality, and try again."
+            return
+        }
         save(url)
     }
 

@@ -1,6 +1,7 @@
 # Generated projects, builds, and packaging
 *.xcodeproj/
 *.xcworkspace/
+/Resources/Info.plist
 DerivedData/
 build/
 dist/

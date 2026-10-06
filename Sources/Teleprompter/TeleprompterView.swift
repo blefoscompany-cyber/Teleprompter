@@ -10,7 +10,7 @@ struct TeleprompterView: UIViewRepresentable {
 
     func makeCoordinator() -> Coordinator { Coordinator(controller: controller) }
     func makeUIView(context: Context) -> UITextView {
-        let view = UITextView()
+        let view = PrompterTextView()
         view.backgroundColor = .clear
         view.isEditable = false
         view.isSelectable = false
@@ -47,8 +47,6 @@ struct TeleprompterView: UIViewRepresentable {
             view.setContentOffset(scriptChanged ? .zero : previousOffset, animated: false)
         }
         view.alpha = CGFloat(textOpacity)
-        // Bottom space lets the final words reach the top reading region.
-        view.textContainerInset = UIEdgeInsets(top: 18, left: 18, bottom: max(40, view.bounds.height - 40), right: 18)
         coordinator.speed = speed
         if coordinator.lastRestartToken != controller.restartToken {
             coordinator.lastRestartToken = controller.restartToken
@@ -108,6 +106,16 @@ struct TeleprompterView: UIViewRepresentable {
             controller.pause()
             setPlaying(false)
         }
+    }
+}
+
+private final class PrompterTextView: UITextView {
+    override func layoutSubviews() {
+        // SwiftUI sets the actual bounds after updateUIView. Computing this in
+        // layout also handles rotation, width/font edits and long final lines.
+        let inset = UIEdgeInsets(top: 18, left: 18, bottom: max(40, bounds.height - 40), right: 18)
+        if textContainerInset != inset { textContainerInset = inset }
+        super.layoutSubviews()
     }
 }
 
