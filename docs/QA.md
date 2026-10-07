@@ -1,6 +1,6 @@
 # iPhone 16 QA — REQUIRES REAL-DEVICE VERIFICATION
 
-No checkboxes below are marked complete before a real test. Start with a ten-second take. Complete the short tests before trying long recordings. Keep example scripts and videos private. Record iOS version, displayed format, front/rear camera, and each result in your private notes.
+Physical-device checkboxes remain unmarked until a real iPhone test. The verified GitHub build checks at the bottom are marked with evidence in [VERIFICATION.md](VERIFICATION.md). Start with a ten-second take. Complete the short tests before trying long recordings. Keep example scripts and videos private. Record iOS version, displayed format, front/rear camera, and each result in your private notes.
 
 ## Camera
 
@@ -84,9 +84,9 @@ Keep the phone powered/charged as appropriate, stable and ventilated, with enoug
 
 ## Windows build and installation
 
-- [ ] GitHub workflow is green and its logs identify stable Xcode/SDK.
-- [ ] Unit tests pass and physical `iphoneos` Release build succeeds with signing off.
-- [ ] Artifact contains `Teleprompter.ipa`, itself containing `Payload/Teleprompter.app`.
+- [x] GitHub workflow is green and its logs identify stable Xcode/SDK.
+- [x] Unit tests pass and physical `iphoneos` Release build succeeds with signing off.
+- [x] Artifact contains `Teleprompter.ipa`, itself containing `Payload/Teleprompter.app`.
 - [ ] AltServer installs AltStore using the free Apple ID.
 - [ ] AltStore signs and installs the actual IPA.
 - [ ] App launches on iPhone 16.

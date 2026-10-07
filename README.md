@@ -2,7 +2,7 @@
 
 A personal iPhone camera app: read a scrolling script over the live preview while recording camera video and microphone audio. The script and buttons do **not** appear in the saved video. There is no backend, account, tracking, watermark, paid API, or recording-duration timer.
 
-**Current status: implementation is ready for its first GitHub/Xcode build and iPhone testing. V1 is not yet certified complete.** No IPA or successful iPhone installation has been verified in this workspace. See [verification status](docs/VERIFICATION.md) and [iPhone checklist](docs/QA.md).
+**Current status: GitHub/Xcode compilation, all 11 app tests, and unsigned IPA packaging have passed. The downloaded IPA has been verified. AltStore installation and real iPhone testing are next; V1 is not yet certified complete.** Open the [successful build and IPA artifact](https://github.com/blefoscompany-cyber/Teleprompter/actions/runs/37650602886). See [verification status](docs/VERIFICATION.md) and [iPhone checklist](docs/QA.md).
 
 ## What you need — no Mac
 
@@ -171,4 +171,4 @@ Never put your personal script or recording in a public issue. A screenshot of a
 
 ## Verification
 
-The simulator unit tests validate format-selection policy and local persistence. They cannot prove physical camera, microphone, orientation, Photos, AltStore signing, or 30-minute recording behavior. All those items are **REQUIRES REAL-DEVICE VERIFICATION** in [the manual checklist](docs/QA.md). Codex must inspect the first actual GitHub compiler output and fix failures; files existing and grammar parsing are not proof of a successful iOS build.
+The simulator unit tests validate format-selection policy and local persistence. They cannot prove physical camera, microphone, orientation, Photos, AltStore signing, or 30-minute recording behavior. All those items are **REQUIRES REAL-DEVICE VERIFICATION** in [the manual checklist](docs/QA.md). Codex has inspected the actual GitHub logs, corrected two build/packaging configuration errors, and verified the successful build and downloaded binary. Future build failures should be diagnosed from their actual logs.
