@@ -9,7 +9,7 @@ fi
 PLATFORM=$(/usr/libexec/PlistBuddy -c 'Print :CFBundleSupportedPlatforms:0' "$APP_PATH/Info.plist")
 [[ "$PLATFORM" == "iPhoneOS" ]] || { echo "Refusing to package a simulator app."; exit 1; }
 EXECUTABLE=$(/usr/libexec/PlistBuddy -c 'Print :CFBundleExecutable' "$APP_PATH/Info.plist")
-lipo -verify_arch arm64 "$APP_PATH/$EXECUTABLE"
+lipo "$APP_PATH/$EXECUTABLE" -verify_arch arm64
 mkdir -p dist
 rm -rf dist/Payload
 rm -f dist/Teleprompter.ipa
