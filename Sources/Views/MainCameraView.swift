@@ -144,7 +144,8 @@ struct MainCameraView: View {
                 Button {
                     if camera.phase == .recording || camera.phase == .preparing { camera.stop() }
                     else if let directory = recordings.directory {
-                        camera.record(orientation: orientation.snapshot(), directory: directory)
+                        camera.record(orientation: orientation.snapshot(), directory: directory,
+                                      mirrorRecordedVideo: settings.mirrorRecordedVideo)
                     }
                 } label: {
                     ZStack {

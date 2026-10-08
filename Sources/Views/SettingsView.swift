@@ -24,7 +24,10 @@ struct SettingsView: View {
                     Picker("Preferred quality", selection: $settings.quality) {
                         ForEach(RecordingQuality.allCases) { Text($0.title).tag($0) }
                     }
-                    Text("The main screen shows the format actually selected. 4K60 uses more storage and can heat the phone. 1080p30 is a practical fallback for long takes. Saved front-camera video is not mirrored.")
+                    Toggle("Mirror Recorded Video", isOn: $settings.mirrorRecordedVideo)
+                    Text("Applies only to saved front-camera video. The front preview stays mirrored; rear recordings stay non-mirrored. Changes apply to the next take.")
+                        .font(.caption).foregroundStyle(.secondary)
+                    Text("The main screen shows the format actually selected. 4K60 uses more storage and can heat the phone. 1080p30 is a practical fallback for long takes.")
                         .font(.caption).foregroundStyle(.secondary)
                 }.disabled(cameraBusy)
                 Section("Orientation") {

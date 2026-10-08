@@ -4,6 +4,7 @@ enum CameraSide: String, CaseIterable, Codable, Identifiable {
     case front, rear
     var id: String { rawValue }
     var title: String { self == .front ? "Front" : "Rear" }
+    func mirrorsRecording(enabled: Bool) -> Bool { self == .front && enabled }
 }
 
 @MainActor
@@ -17,6 +18,7 @@ final class AppSettings: ObservableObject {
     @Published var backgroundOpacity: Double { didSet { persist() } }
     @Published var camera: CameraSide { didSet { persist() } }
     @Published var quality: RecordingQuality { didSet { persist() } }
+    @Published var mirrorRecordedVideo: Bool { didSet { persist() } }
     private let defaults: UserDefaults
 
     init(defaults: UserDefaults = .standard) {
@@ -34,12 +36,13 @@ final class AppSettings: ObservableObject {
         textOpacity = number("textOpacity", 1, 0.4...1)
         backgroundOpacity = number("backgroundOpacity", 0.45, 0...0.85)
         camera = CameraSide(rawValue: stored["camera"] as? String ?? "") ?? .front
+        mirrorRecordedVideo = stored["mirrorRecordedVideo"] as? Bool ?? true
         quality = RecordingQuality(rawValue: stored["quality"] as? String ?? "") ?? .preferred4K60
     }
     private func persist() {
         defaults.set(["fontSize": fontSize, "speed": speed, "width": width,
                       "position": verticalPosition, "textOpacity": textOpacity,
                       "backgroundOpacity": backgroundOpacity, "camera": camera.rawValue,
-                      "quality": quality.rawValue] as [String: Any], forKey: "settings")
+                      "quality": quality.rawValue, "mirrorRecordedVideo": mirrorRecordedVideo] as [String: Any], forKey: "settings")
     }
 }

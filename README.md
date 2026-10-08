@@ -30,7 +30,7 @@ Only application source goes to GitHub. Your scripts and recordings stay on the 
 7. **Pause** freezes the script; **Play** resumes. Swiping the text scrolls manually and pauses automatic scrolling. The **back-to-start icon** returns the script to its beginning.
 8. Tap the **red square** to stop. Wait for **Video saved to Photos**. Open Apple's Photos app to watch the result.
 
-Keep the phone in its starting orientation throughout the take. The file's orientation is fixed when you press Record. The front preview is mirrored to help frame yourself; the saved front video is not mirrored. The preview fits the video frame without cropping it, so black bars can appear around it.
+Keep the phone in its starting orientation throughout the take. The file's orientation is fixed when you press Record. The front preview is mirrored to help frame yourself; saved front video is also mirrored by default. To change only the saved video, open **Settings → Mirror Recorded Video**. Turn it off for non-mirrored front footage. Rear video always stays non-mirrored. The choice is saved locally and applies to the next take. The preview fits the video frame without cropping it, so black bars can appear around it.
 
 There is no app duration limit. Long 4K60 takes use substantial storage and battery, and can heat the phone. The app warns about low storage/serious heat, refuses to start below 500 MB free, and lets AVFoundation stop near its storage reserve. Critical heat stops a take to protect the phone and preserve its file. Normal/minor heat does not stop recording. Incoming calls, locking the screen, switching away from the app, or iOS camera restrictions may end a take; this is a foreground camera app.
 

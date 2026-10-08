@@ -245,7 +245,7 @@ final class CameraManager: NSObject, ObservableObject, AVCaptureFileOutputRecord
     }
 
     // Called on the main thread with the interface orientation seen by the user.
-    func record(orientation: UIInterfaceOrientation, directory: URL) {
+    func record(orientation: UIInterfaceOrientation, directory: URL, mirrorRecordedVideo: Bool) {
         // Reserve an iOS background task BEFORE moving to the capture queue.
         // It only protects finalization; this is not background camera recording.
         let task = UIApplication.shared.beginBackgroundTask(withName: "Finalize recording") { [weak self] in
@@ -279,10 +279,16 @@ final class CameraManager: NSObject, ObservableObject, AVCaptureFileOutputRecord
                 DispatchQueue.main.async { if task != .invalid { UIApplication.shared.endBackgroundTask(task) } }
                 return
             }
+            let mirror = self.side.mirrorsRecording(enabled: mirrorRecordedVideo)
+            guard !mirror || connection.isVideoMirroringSupported else {
+                self.publish { $0.message = "This camera configuration cannot mirror the recording. Turn off Mirror Recorded Video in Settings, or choose another camera quality." }
+                DispatchQueue.main.async { if task != .invalid { UIApplication.shared.endBackgroundTask(task) } }
+                return
+            }
             connection.videoOrientation = orientation.captureOrientation
             if connection.isVideoMirroringSupported {
                 connection.automaticallyAdjustsVideoMirroring = false
-                connection.isVideoMirrored = false // Saved front video is natural; preview is mirrored.
+                connection.isVideoMirrored = mirror // Movie connection only; preview is independent.
             }
             let url = directory.appendingPathComponent("Take-\(UUID().uuidString).mov")
             self.currentURL = url

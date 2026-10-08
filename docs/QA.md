@@ -24,7 +24,13 @@ The owner confirmed V1 installs and launches on iPhone 16 and records video with
 - [ ] Voice/audio exists and stays synchronized with picture.
 - [ ] Teleprompter text, background and controls are absent from saved video.
 - [ ] Saved video's actual dimensions/FPS match the selected configuration. Inspect a privately exported file using MediaInfo on Windows or an equivalent local tool; the status label alone is not output evidence. Allow for container-reported fractional/average frame-rate measurement and report discrepancies to Codex.
-- [ ] Front preview is mirrored; saved front video is unmirrored.
+- [ ] New/install-updated settings default Mirror Recorded Video ON; existing scripts and settings survive.
+- [ ] Front preview stays mirrored with Mirror Recorded Video both ON and OFF.
+- [ ] Front saved video with mirror ON matches preview left/right; with OFF it is non-mirrored. Record a private asymmetric object or printed word, and check Photos playback and an exported file on Windows.
+- [ ] Repeat front mirror ON/OFF in portrait, landscape left and landscape right: playback remains upright and landscape remains 16:9.
+- [ ] Rear saved video remains non-mirrored with the setting ON and OFF, in all three orientations.
+- [ ] Toggle mirror OFF, relaunch, confirm it stays OFF; repeat ON. The control is disabled during a take.
+- [ ] Repeated ON/OFF front takes and front/rear switching do not retain a previous take's mirroring; audio, 4K60 selection and Photos saving still work.
 - [ ] Two or more successive takes work without relaunching.
 
 ## Teleprompter
