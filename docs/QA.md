@@ -1,6 +1,6 @@
 # iPhone 16 QA — REQUIRES REAL-DEVICE VERIFICATION
 
-Physical-device checkboxes remain unmarked until a real iPhone test. The verified GitHub build checks at the bottom are marked with evidence in [VERIFICATION.md](VERIFICATION.md). Start with a ten-second take. Complete the short tests before trying long recordings. Keep example scripts and videos private. Record iOS version, displayed format, front/rear camera, and each result in your private notes.
+The owner confirmed V1 installs and launches on iPhone 16 and records video with microphone audio into Photos. Other physical-device checkboxes remain unmarked until tested; repeat recording checks on version 1.1. The verified GitHub build checks at the bottom are marked with evidence in [VERIFICATION.md](VERIFICATION.md). Start with a ten-second take. Complete the short tests before trying long recordings. Keep example scripts and videos private. Record iOS version, displayed format, front/rear camera, and each result in your private notes.
 
 ## Camera
 
@@ -31,7 +31,9 @@ Physical-device checkboxes remain unmarked until a real iPhone test. The verifie
 
 - [ ] Paste, edit, clear (with confirmation), and reopen a script.
 - [ ] Long script (at least several thousand words) lays out and scrolls smoothly while recording.
-- [ ] Play starts automatic scrolling.
+- [ ] Play moves visible text upward for a one-line script, a medium script and a long script in portrait and landscape.
+- [ ] The final line can move completely through the readable region before Play pauses.
+- [ ] Idle rotation, font/width changes and temporary layout resizing do not stop Play prematurely; the reading position is retained where the new layout permits.
 - [ ] Pause leaves the same reading position.
 - [ ] Resume continues from that position.
 - [ ] Restart returns to the beginning.
@@ -53,14 +55,20 @@ Physical-device checkboxes remain unmarked until a real iPhone test. The verifie
 - [ ] Rear: portrait UI and saved playback upright.
 - [ ] Rear: landscape left UI and saved playback upright.
 - [ ] Rear: landscape right UI and saved playback upright.
-- [ ] Rotate while idle: status follows the actual interface, including with Portrait Orientation Lock enabled.
+- [ ] Automatic rotation with Portrait Orientation Lock OFF: both landscape sides show upright text, accessible side controls, and the correct status.
+- [ ] With Portrait Orientation Lock ON: automatic mode stays portrait and explains the likely lock; test the manual Landscape left/right menu. If iOS refuses, the error explains unlock/retry and does not claim a rotation succeeded.
+- [ ] Manual Portrait/left/right choices rotate the actual interface and preview before Record can be pressed.
+- [ ] Inspect exported landscape files: 3840×2160 or 1920×1080 (selected mode), upright 16:9 playback, with both cameras and both landscape sides.
+- [ ] A 180-degree idle turn between landscape sides updates preview/status even though the view size is unchanged.
 - [ ] Accidental rotation during a take: file orientation remains the starting orientation. No crash or new orientation halfway through; keep the phone fixed for normal use.
 - [ ] Face-up/down orientation does not overwrite the last usable interface orientation.
 
 ## Permissions, interruptions, saving and recovery
 
 - [ ] Deny Camera: human-readable instructions; no crash. Allow it later and Retry camera works.
-- [ ] Deny Microphone: clear explanation; no silent video-only take starts.
+- [ ] Granted microphone permission + active preview shows Microphone ready, and saved audio still exists.
+- [ ] During audio interruption the status distinguishes interruption from denied permission; after recovery the stale warning clears.
+- [ ] Deny Microphone: clear explanation; no silent video-only take starts. Re-enable it in Settings and retry: the denied message clears.
 - [ ] Deny Photos/add access: recording finalizes and remains under Kept videos.
 - [ ] Restore Photos access, Save to Photos succeeds, local retained file is removed.
 - [ ] Export a retained recording to Files and play the exported copy.
@@ -88,8 +96,8 @@ Keep the phone powered/charged as appropriate, stable and ventilated, with enoug
 - [x] Unit tests pass and physical `iphoneos` Release build succeeds with signing off.
 - [x] Artifact contains `Teleprompter.ipa`, itself containing `Payload/Teleprompter.app`.
 - [ ] AltServer installs AltStore using the free Apple ID.
-- [ ] AltStore signs and installs the actual IPA.
-- [ ] App launches on iPhone 16.
+- [x] Owner confirmed AltStore signs and installs the V1 IPA.
+- [x] Owner confirmed V1 launches on iPhone 16.
 - [ ] AltStore refresh renews both app expiry dates without paying.
 - [ ] Updating the IPA preserves script/settings (same bundle identifier/signing account).
 

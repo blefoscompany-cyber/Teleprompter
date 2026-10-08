@@ -10,7 +10,7 @@ Development here is Linux. It has no Xcode, Apple SDK, Swift compiler, or physic
 
 - Native app source, project definition, macOS CI, unit tests, packaging scripts, beginner guide and device QA checklist are present.
 - Swift source grammar has been parsed with Tree-sitter; this checks syntax, not types or Apple API compilation.
-- **PASS:** all 15 Swift files (13 application, 2 test files) parse without grammar errors using Tree-sitter. This is not type checking or Apple SDK compilation.
+- **PASS:** all 20 Swift files (16 application, 4 test files) parse without grammar errors using Tree-sitter. This is not type checking or Apple SDK compilation.
 - **PASS:** all Python build scripts parse; the IPA packaging shell script passes `bash -n`.
 - **PASS:** project/workflow YAML parses; signing is disabled, the workflow uses the standard `macos-15` runner, its token has read-only contents access, and manual dispatch is enabled.
 - **PASS:** asset-catalog JSON and the 1024 × 1024 opaque RGB app icon are valid.
@@ -18,7 +18,7 @@ Development here is Linux. It has no Xcode, Apple SDK, Swift compiler, or physic
 - **PASS:** `git diff --check`; ignore rules protect movie files, personal-script folders, signing files, generated projects, generated Info.plist, and build/IPA artifacts.
 - **REVIEWED:** capture mutations and delegate work are serialized; published state runs on main; foreground-return during finalization and reconfiguration after media-service resets were corrected; layout-driven text padding handles rotation; file deletion is conditional on a successful Photos transaction.
 
-These local checks have now been followed by real Xcode compilation, simulator XCTest execution, and verification of the compiled IPA, as recorded below. Runtime camera reliability remains pending iPhone testing.
+These local checks have now been followed by real Xcode compilation, simulator XCTest execution, and verification of the compiled IPA, as recorded below. The owner subsequently confirmed basic V1 recording on iPhone 16. Full acceptance and the version 1.1 fixes remain pending device testing.
 
 ## Successful GitHub build — 7 October 2026
 
@@ -43,7 +43,32 @@ The build reports deprecation warnings for the supported older AVFoundation orie
 
 ## Pending gates
 
-- **AltStore installation and iPhone launch: REQUIRES REAL-DEVICE VERIFICATION.**
+- **Owner-confirmed V1:** AltStore installation, launch on iPhone 16, camera video with microphone audio, and successful saving to Photos.
 - **Camera/microphone, genuine output 4K60, Photos saving, overlay exclusion, all orientations, interruption recovery and long recordings: REQUIRES REAL-DEVICE VERIFICATION.**
 
 Use [QA.md](QA.md) for acceptance. Do not mark device gates complete based on successful compilation, unit tests, or IPA structure alone. Install through AltStore Classic, then begin with a private ten-second recording before long-take testing.
+
+## Version 1.1 targeted fixes — 8 October 2026
+
+### Causes found in source
+
+- Scrolling calculated its endpoint without the bottom scroll inset and treated unfinished layout as the end. The corrected geometry includes adjusted top/bottom insets, adds a full viewport of trailing scroll space, waits for valid/stable layout, and preserves Play through resizing. Native UIKit tests verify movement and pause/resume, not just controller flags. A weak display-link proxy remains in use.
+- Orientation relied on incidental preview layout updates and lacked explicit scene geometry requests or a landscape control layout. The app now observes actual scene transitions (including 180-degree turns), shares that orientation with preview and recording, provides public-API manual portrait/landscape scene requests, and locks the actual starting orientation during a take. Automatic rotation can be blocked by Portrait Orientation Lock; manual requests report failure instead of pretending the scene rotated. Physical playback and lock behavior require device verification.
+- Audio setup/interruption warnings could be confused with permission denial or remain stale after recovery. Current authorization is now separate from audio setup/session readiness; a granted permission is not labelled disabled and successful recovery clears stale interruption warnings. The existing microphone input and native movie output are preserved.
+
+The bundle identifier `local.teleprompter.camera`, script/settings keys, local recordings directory, format selector and native Photos saving are unchanged. There are no new dependencies, services or recording limits. The version fields are explicitly wired into XcodeGen's generated Info.plist; an initial successful build caught by independent artifact inspection still carried default version 1.0, so that metadata was corrected before distribution.
+
+### Device gate
+
+**REQUIRES REAL-DEVICE VERIFICATION:** version 1.1 in-place AltStore update/data retention, both landscape sides and saved 16:9 playback, short/medium/long automatic scrolling, manual orientation with lock on/off, microphone status and interruption recovery. Existing camera/4K60/Photos and long-take checks must also be repeated where indicated in QA.md. Simulator tests do not establish camera hardware behavior.
+
+### Final build and downloaded artifact
+
+- **PASS:** https://github.com/blefoscompany-cyber/Teleprompter/actions/runs/37739554005 — built `e76c2c0` on main using Xcode 16.4, physical iPhoneOS 18.5 SDK, signing disabled.
+- **PASS:** actual job logs inspected: nine build-tool tests and 25 simulator XCTest cases, zero failures (including 14 new scrolling/orientation/microphone regression cases); Release `iphoneos` build and packaging/upload succeeded.
+- **PASS:** downloaded [Teleprompter-IPA artifact](https://github.com/blefoscompany-cyber/Teleprompter/actions/runs/37739554005/artifacts/11533736569), ID `11533736569`, size `277740` bytes. Outer ZIP digest matches GitHub: `bb3951ac2742cf31da35b4f751b2374eb9df1b31dd9e6cd71a1318e6e9873152`.
+- **PASS:** independent inspection confirms version **1.1**, build **2**, unchanged `local.teleprompter.camera`, iPhone family `[1]`, expected Payload structure/permission descriptions/orientations, and an unsigned arm64 physical-iOS Mach-O executable.
+- IPA SHA-256: `7c32361c055dc541d0f7a8b1c89053c12429bbd10310d492f97195fb723f073a`.
+- Supported older orientation APIs produce deprecation warnings; no compiler/test failure occurred. Real rotation, recording playback, Portrait Orientation Lock behavior and long takes are still physical-device gates.
+
+Subsequent documentation-only commits do not rebuild the app; their application source/project configuration is identical to the successful build above. Update using README's in-place AltStore instructions; do not uninstall the existing app.

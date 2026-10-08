@@ -2,7 +2,7 @@
 
 A personal iPhone camera app: read a scrolling script over the live preview while recording camera video and microphone audio. The script and buttons do **not** appear in the saved video. There is no backend, account, tracking, watermark, paid API, or recording-duration timer.
 
-**Current status: GitHub/Xcode compilation, all 11 app tests, and unsigned IPA packaging have passed. The downloaded IPA has been verified. AltStore installation and real iPhone testing are next; V1 is not yet certified complete.** Open the [successful build and IPA artifact](https://github.com/blefoscompany-cyber/Teleprompter/actions/runs/37650602886). See [verification status](docs/VERIFICATION.md) and [iPhone checklist](docs/QA.md).
+**Current status:** The owner installed V1 through AltStore on an iPhone 16 and confirmed video, microphone audio, and saving to Photos. Version 1.1 addresses landscape layout, automatic scrolling and microphone status. [Version 1.1 build and IPA](https://github.com/blefoscompany-cyber/Teleprompter/actions/runs/37739554005) passed all 25 app tests. These fixes require real-device verification; see [verification status](docs/VERIFICATION.md) and [iPhone checklist](docs/QA.md).
 
 ## What you need — no Mac
 
@@ -24,7 +24,7 @@ Only application source goes to GitHub. Your scripts and recordings stay on the 
 1. On first launch, allow **Camera**, **Microphone**, and adding videos to **Photos** when iOS asks. Photos permission is only for adding videos; the app doesn't browse your library.
 2. Tap the **document icon** at the bottom. Paste your script into the editor by touching and holding in the text area, then choosing **Paste**. Tap **Done**. Edits save automatically. The first installation starts with an empty script.
 3. Tap the camera button at the top to choose **Front** or **Rear**. Do this before recording.
-4. Hold the phone upright for Reels or horizontally for YouTube. If it won't rotate, open Control Center and turn off the padlock-with-circular-arrow **Portrait Orientation Lock**. Check the on-screen orientation before recording.
+4. Hold the phone upright for Reels or horizontally for YouTube. The rotation menu at the top offers **Automatic rotation**, **Portrait**, **Landscape left**, and **Landscape right**. Automatic rotation follows iOS and can be prevented by **Portrait Orientation Lock** in Control Center. A manual choice asks iOS to rotate the actual screen; if iOS refuses, the app explains how to turn off the lock and retry. Check the displayed orientation before recording. In landscape, buttons move to a side rail.
 5. Tap the **sliders icon**. Set text size, speed, width, vertical position, and opacity. Position **0% is at the top**, 100% at the bottom. Place the reading area near the physical lens; in landscape the front lens is at a side of the phone, so center placement will not align perfectly with it. Tap **Done**.
 6. Tap the **red circle** to record. Then tap **Play** to scroll your script. These are independent controls; you can rehearse scrolling without recording.
 7. **Pause** freezes the script; **Play** resumes. Swiping the text scrolls manually and pauses automatic scrolling. The **back-to-start icon** returns the script to its beginning.
@@ -48,7 +48,7 @@ The completed `.mov` stays in the app's **Documents/Recordings** folder until Ph
 | `Sources/Views` | Camera screen, settings, editor, retained recordings |
 | `Sources/Models` | Locally saved settings and testable format selection |
 | `Sources/Utilities` | Permissions and safe Photos saving |
-| `Tests` | Format fallback and settings persistence tests |
+| `Tests` | Format fallback, persistence, scrolling, orientation and permission regression tests |
 | `project.yml` | XcodeGen project definition; maintained on Windows |
 | `Resources` | Generated Info.plist and app resources |
 | `.github/workflows/build-ios.yml` | macOS tests, iPhone build, unsigned IPA artifact |
@@ -130,7 +130,14 @@ Trusting the developer identity and Developer Mode are separate iOS settings. Yo
 
 **Local transfer if File Sharing isn't available:** On Windows, put just the IPA in a new folder. Right-click the folder → **Properties → Sharing → Advanced Sharing**, select **Share this folder**, give it a name such as `TeleprompterIPA`, and keep access limited to your Windows account. Note your PC name in **Settings → System → About**. On the iPhone, open **Files → Browse → … → Connect to Server**. Enter `smb://YOUR-PC-NAME`, choose **Registered User**, and sign in with the Windows account's network credentials (not its Windows Hello PIN). Open the share and copy the IPA to **On My iPhone**. Both devices must be on the same private home network. Turn off the temporary folder share after transfer. This transfer uses no cloud service, API, or hosting subscription. Ask Codex for help if Windows network credentials/sharing are unfamiliar; don't share the password in chat.
 
-To install a later build, use the same IPA-import process and keep the same Apple ID and project bundle identifier. A normal update should retain the saved script/settings. Export kept recordings before any reinstall; **deleting the app deletes its local data**.
+### Update V1 to version 1.1 without deleting it
+
+1. Download and extract the new **Teleprompter-IPA** artifact as described above. Transfer its **Teleprompter.ipa** to Files on your iPhone using the method that worked for V1.
+2. Keep AltServer running on Windows and connect/unlock your iPhone. Keep **the same Apple ID** signed into AltStore.
+3. Open **AltStore → My Apps → +**, select the new IPA, and wait for installation. This imports a new build over the existing Teleprompter; **Refresh All only renews signing and does not download new code**.
+4. Open Teleprompter and check your saved script. If AltStore reports an error or proposes deleting the existing app, stop and send Codex the exact message. Do not uninstall to troubleshoot.
+
+The bundle identifier remains `local.teleprompter.camera`. Script/settings storage keys and the local recordings folder are unchanged, so an in-place update should retain them. This update path still needs your device confirmation. Videos already saved in Photos remain in Photos. Export any unsaved kept videos and copy important scripts privately before installation for an extra backup. **Deleting the app deletes its local data.**
 
 ## Refresh before the seven days expire
 
