@@ -24,6 +24,8 @@ targets:
       path: Resources/Info.plist
       properties:
         CFBundleDisplayName: Teleprompter
+        CFBundleShortVersionString: "$(MARKETING_VERSION)"
+        CFBundleVersion: "$(CURRENT_PROJECT_VERSION)"
         NSCameraUsageDescription: Show your camera and record videos while you read your script.
         NSMicrophoneUsageDescription: Record your voice together with the camera video.
         NSPhotoLibraryAddUsageDescription: Save your finished recordings to Apple Photos.
