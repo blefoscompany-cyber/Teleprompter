@@ -4,19 +4,20 @@ import AVFoundation
 struct CameraPreview: UIViewRepresentable {
     let session: AVCaptureSession
     let mirrored: Bool
-    var orientationChanged: (UIInterfaceOrientation) -> Void
+    let orientation: UIInterfaceOrientation
 
     func makeUIView(context: Context) -> PreviewView {
         let view = PreviewView()
         view.previewLayer.session = session
         view.previewLayer.videoGravity = .resizeAspect
-        view.orientationChanged = orientationChanged
+        view.orientation = orientation
         view.mirrored = mirrored
         return view
     }
     func updateUIView(_ view: PreviewView, context: Context) {
-        view.orientationChanged = orientationChanged
+        view.orientation = orientation
         view.mirrored = mirrored
+        view.applyConnectionOrientation()
         view.setNeedsLayout()
     }
     static func dismantleUIView(_ view: PreviewView, coordinator: ()) {
@@ -27,24 +28,20 @@ struct CameraPreview: UIViewRepresentable {
 final class PreviewView: UIView {
     override class var layerClass: AnyClass { AVCaptureVideoPreviewLayer.self }
     var previewLayer: AVCaptureVideoPreviewLayer { layer as! AVCaptureVideoPreviewLayer }
-    var orientationChanged: ((UIInterfaceOrientation) -> Void)?
+    var orientation: UIInterfaceOrientation = .portrait
     var mirrored = false
-    private var lastOrientation: UIInterfaceOrientation?
 
     override func layoutSubviews() {
         super.layoutSubviews()
-        // Interface orientation avoids device-orientation reversal and face-up ambiguity.
-        guard let orientation = window?.windowScene?.interfaceOrientation, orientation != .unknown else { return }
+        applyConnectionOrientation()
+    }
+    func applyConnectionOrientation() {
         if let connection = previewLayer.connection {
             if connection.isVideoOrientationSupported { connection.videoOrientation = orientation.captureOrientation }
             if connection.isVideoMirroringSupported {
                 connection.automaticallyAdjustsVideoMirroring = false
                 connection.isVideoMirrored = mirrored
             }
-        }
-        if orientation != lastOrientation {
-            lastOrientation = orientation
-            DispatchQueue.main.async { [weak self] in self?.orientationChanged?(orientation) }
         }
     }
 }

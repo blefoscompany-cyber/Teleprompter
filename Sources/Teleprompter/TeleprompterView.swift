@@ -16,7 +16,11 @@ struct TeleprompterView: UIViewRepresentable {
         view.isSelectable = false
         view.alwaysBounceVertical = true
         view.showsVerticalScrollIndicator = true
+        view.isScrollEnabled = true
         view.textContainer.lineFragmentPadding = 0
+        view.textContainer.widthTracksTextView = true
+        view.textContainer.heightTracksTextView = false
+        view.textContainerInset = UIEdgeInsets(top: 18, left: 18, bottom: 18, right: 18)
         view.contentInsetAdjustmentBehavior = .never
         view.delegate = context.coordinator
         view.accessibilityLabel = "Script. Swipe to scroll manually."
@@ -43,14 +47,17 @@ struct TeleprompterView: UIViewRepresentable {
             ])
             coordinator.lastScript = script
             coordinator.lastFontSize = fontSize
+            coordinator.invalidateGeometry()
+            view.layoutManager.ensureLayout(for: view.textContainer)
             view.layoutIfNeeded()
-            view.setContentOffset(scriptChanged ? .zero : previousOffset, animated: false)
+            view.setContentOffset(scriptChanged ? CGPoint(x: 0, y: -view.adjustedContentInset.top) : previousOffset, animated: false)
         }
         view.alpha = CGFloat(textOpacity)
         coordinator.speed = speed
         if coordinator.lastRestartToken != controller.restartToken {
             coordinator.lastRestartToken = controller.restartToken
-            view.setContentOffset(.zero, animated: false)
+            coordinator.invalidateGeometry()
+            view.setContentOffset(CGPoint(x: 0, y: -view.adjustedContentInset.top), animated: false)
         }
         coordinator.setPlaying(controller.isPlaying)
     }
@@ -70,6 +77,8 @@ struct TeleprompterView: UIViewRepresentable {
         private var link: CADisplayLink?
         private var previousTimestamp: CFTimeInterval?
         private var proxy: DisplayLinkProxy?
+        private var stableEndFrames = 0
+        private var lastGeometry: ScrollGeometry?
 
         init(controller: TeleprompterController) { self.controller = controller }
         func setPlaying(_ playing: Bool) {
@@ -82,6 +91,7 @@ struct TeleprompterView: UIViewRepresentable {
                 link.add(to: .main, forMode: .common)
                 self.link = link
                 previousTimestamp = nil
+                stableEndFrames = 0
             } else if !playing {
                 link?.invalidate()
                 link = nil
@@ -90,18 +100,37 @@ struct TeleprompterView: UIViewRepresentable {
             }
         }
         func tick(_ link: CADisplayLink) {
+            advance(timestamp: link.timestamp)
+        }
+        func advance(timestamp: CFTimeInterval) {
+            guard controller.isPlaying else { return }
             guard let view, !view.isDragging, !view.isDecelerating else { previousTimestamp = nil; return }
-            defer { previousTimestamp = link.timestamp }
+            view.layoutIfNeeded()
+            let geometry = ScrollGeometry(contentHeight: view.contentSize.height, viewportHeight: view.bounds.height,
+                                          topInset: view.adjustedContentInset.top, bottomInset: view.adjustedContentInset.bottom)
+            // A zero-sized or still-laying-out view is not the end of a script.
+            guard geometry.isReady, !(lastScript?.isEmpty ?? true) else {
+                previousTimestamp = nil
+                stableEndFrames = 0
+                return
+            }
+            if geometry != lastGeometry {
+                lastGeometry = geometry
+                stableEndFrames = 0
+                previousTimestamp = timestamp
+                return
+            }
+            defer { previousTimestamp = timestamp }
             guard let previousTimestamp else { return }
-            let elapsed = min(link.timestamp - previousTimestamp, 0.1)
-            let maximum = max(0, view.contentSize.height - view.bounds.height)
-            let next = min(maximum, max(0, view.contentOffset.y) + CGFloat(speed * elapsed))
+            let next = geometry.advanced(from: view.contentOffset.y, speed: speed, elapsed: timestamp - previousTimestamp)
             view.setContentOffset(CGPoint(x: 0, y: next), animated: false)
-            if next >= maximum {
+            stableEndFrames = next >= geometry.maximum ? stableEndFrames + 1 : 0
+            if stableEndFrames >= 3 {
                 controller.pause()
                 setPlaying(false)
             }
         }
+        func invalidateGeometry() { lastGeometry = nil; stableEndFrames = 0; previousTimestamp = nil }
         func scrollViewWillBeginDragging(_ scrollView: UIScrollView) {
             controller.pause()
             setPlaying(false)
@@ -109,13 +138,19 @@ struct TeleprompterView: UIViewRepresentable {
     }
 }
 
-private final class PrompterTextView: UITextView {
+final class PrompterTextView: UITextView {
+    private var lastLayoutSize = CGSize.zero
     override func layoutSubviews() {
         // SwiftUI sets the actual bounds after updateUIView. Computing this in
         // layout also handles rotation, width/font edits and long final lines.
-        let inset = UIEdgeInsets(top: 18, left: 18, bottom: max(40, bounds.height - 40), right: 18)
-        if textContainerInset != inset { textContainerInset = inset }
+        // A scroll-view inset lets even one line travel fully past the top.
+        let inset = UIEdgeInsets(top: 0, left: 0, bottom: max(0, bounds.height), right: 0)
+        if contentInset != inset { contentInset = inset }
         super.layoutSubviews()
+        if bounds.size != lastLayoutSize {
+            lastLayoutSize = bounds.size
+            layoutManager.ensureLayout(for: textContainer)
+        }
     }
 }
 

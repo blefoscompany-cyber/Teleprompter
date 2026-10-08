@@ -28,7 +28,7 @@ struct SettingsView: View {
                         .font(.caption).foregroundStyle(.secondary)
                 }.disabled(cameraBusy)
                 Section("Orientation") {
-                    Text("Turn your iPhone before pressing Record. Disable Portrait Orientation Lock in Control Center for landscape. Video orientation stays fixed for the whole take. Keep the phone in that position until Stop.")
+                    Text("Turn your iPhone before Record, or choose Landscape left/right from the rotation menu on the camera screen. Automatic rotation respects Portrait Orientation Lock; turn it off in Control Center if the screen stays upright. Manual modes request an actual iOS scene rotation. If iOS refuses, the app explains how to retry. Preview and video use the actual orientation shown, which stays fixed during the take. Landscape 4K/1080p/720p videos are 16:9.")
                         .font(.callout)
                 }
             }

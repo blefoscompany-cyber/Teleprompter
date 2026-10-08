@@ -20,6 +20,7 @@ final class CameraManager: NSObject, ObservableObject, AVCaptureFileOutputRecord
     @Published private(set) var startedAt: Date?
     @Published private(set) var lockedOrientation: UIInterfaceOrientation?
     @Published private(set) var warning: String?
+    @Published private(set) var microphoneStatus: MicrophoneStatus = .permissionNeeded
     @Published var message: String?
     var onRecordingFinished: ((URL) -> Void)?
 
@@ -36,6 +37,10 @@ final class CameraManager: NSObject, ObservableObject, AVCaptureFileOutputRecord
     private var monitor: DispatchSourceTimer?
     private var backgroundTask: UIBackgroundTaskIdentifier = .invalid
     private var currentURL: URL?
+    private var formatWarning: String?
+    private var interruptionWarning: String?
+    private var safetyWarning: String?
+    private var audioActive = false
     private let log = Logger(subsystem: "local.teleprompter.camera", category: "capture")
 
     override init() {
@@ -50,8 +55,10 @@ final class CameraManager: NSObject, ObservableObject, AVCaptureFileOutputRecord
                 guard let self else { return }
                 self.publish {
                     $0.isReady = false
-                    $0.warning = "Camera interrupted by iOS. Any completed recording will be kept. Return to the app when the camera is available."
                 }
+                self.interruptionWarning = "Camera interrupted by iOS. Any completed recording will be kept. Return when the camera is available."
+                self.publishWarnings()
+                self.publishMicrophoneStatus(interrupted: true)
                 self.stopOnQueue()
             }
         })
@@ -63,7 +70,10 @@ final class CameraManager: NSObject, ObservableObject, AVCaptureFileOutputRecord
             self?.sessionQueue.async {
                 guard let self else { return }
                 if raw == AVAudioSession.InterruptionType.began.rawValue {
-                    self.publish { $0.warning = "Microphone interrupted. Recording is stopping so your file can be saved. Resume after the interruption." }
+                    self.audioActive = false
+                    self.interruptionWarning = "Audio interrupted by iOS. Recording is stopping so the file can be saved. Wait for audio to reconnect before another take."
+                    self.publishWarnings()
+                    self.publishMicrophoneStatus(interrupted: true)
                     self.stopOnQueue()
                 } else {
                     self.resumeOnQueue()
@@ -109,10 +119,11 @@ final class CameraManager: NSObject, ObservableObject, AVCaptureFileOutputRecord
     private func configure(side requestedSide: CameraSide, quality requestedQuality: RecordingQuality, force: Bool = false) throws {
         guard force || !configured || side != requestedSide || quality != requestedQuality else { return }
         publish { $0.isConfiguring = true; $0.isReady = false }
+        publishMicrophoneStatus()
         defer { publish { $0.isConfiguring = false } }
         guard AVCaptureDevice.authorizationStatus(for: .video) == .authorized,
               AVCaptureDevice.authorizationStatus(for: .audio) == .authorized else {
-            throw CaptureFailure("Allow Camera and Microphone in Settings → Teleprompter, then tap Retry camera.")
+            throw CaptureFailure(PermissionManager.currentCaptureExplanation() ?? "Capture permissions changed. Tap Retry camera.")
         }
         let position: AVCaptureDevice.Position = requestedSide == .front ? .front : .back
         guard let device = AVCaptureDevice.default(.builtInWideAngleCamera, for: .video, position: position) else {
@@ -185,24 +196,29 @@ final class CameraManager: NSObject, ObservableObject, AVCaptureFileOutputRecord
         side = requestedSide
         quality = requestedQuality
         configured = true
+        formatWarning = choice.isFallback ? "Requested \(requestedQuality.title). This camera supports \(choice.label) in this configuration." : nil
+        publishWarnings()
         publish {
             $0.selectedSide = requestedSide
             $0.formatLabel = choice.label + (choice.isFallback ? " (fallback)" : "")
-            $0.warning = choice.isFallback ? "Requested \(requestedQuality.title). This camera supports \(choice.label) in this configuration." : nil
         }
     }
 
     private func configureAudio() throws {
+        audioActive = false
         let audio = AVAudioSession.sharedInstance()
         try audio.setCategory(.playAndRecord, mode: .videoRecording, options: [])
         try audio.setActive(true)
+        audioActive = true
     }
 
     private func resumeOnQueue() {
         guard wantsRunning, configured, queuePhase == .idle, !session.isInterrupted else { return }
+        publishMicrophoneStatus()
         guard AVCaptureDevice.authorizationStatus(for: .video) == .authorized,
               AVCaptureDevice.authorizationStatus(for: .audio) == .authorized else {
-            publish { $0.isReady = false; $0.message = "Camera or microphone permission changed. Allow both in Settings → Teleprompter, then tap Retry camera." }
+            let explanation = PermissionManager.currentCaptureExplanation()
+            publish { $0.isReady = false; $0.message = explanation ?? "Capture permissions changed. Tap Retry camera." }
             return
         }
         do {
@@ -210,15 +226,20 @@ final class CameraManager: NSObject, ObservableObject, AVCaptureFileOutputRecord
             if !session.isRunning { session.startRunning() }
             let running = session.isRunning
             publish { $0.isReady = running }
+            if running { interruptionWarning = nil; publishWarnings() }
+            publishMicrophoneStatus()
             if !running { publish { $0.message = "The camera could not start. Close other camera apps and tap Retry camera." } }
             checkSafety()
         } catch {
-            report(error, explanation: "The microphone could not start. Disconnect audio accessories, close other audio apps, and tap Retry camera.")
+            publishMicrophoneStatus()
+            report(error, explanation: "Microphone permission is allowed, but iOS could not activate audio. Disconnect audio accessories, close other audio apps, and tap Retry camera.")
         }
     }
 
     private func suspendOnQueue() {
         if session.isRunning { session.stopRunning() }
+        audioActive = false
+        publishMicrophoneStatus()
         do { try AVAudioSession.sharedInstance().setActive(false, options: .notifyOthersOnDeactivation) }
         catch { log.error("Audio deactivation failed: \(error.localizedDescription, privacy: .public)") }
     }
@@ -253,7 +274,12 @@ final class CameraManager: NSObject, ObservableObject, AVCaptureFileOutputRecord
                 DispatchQueue.main.async { if task != .invalid { UIApplication.shared.endBackgroundTask(task) } }
                 return
             }
-            if connection.isVideoOrientationSupported { connection.videoOrientation = orientation.captureOrientation }
+            guard connection.isVideoOrientationSupported else {
+                self.publish { $0.message = "The selected camera cannot orient this recording. Choose another quality or camera and retry." }
+                DispatchQueue.main.async { if task != .invalid { UIApplication.shared.endBackgroundTask(task) } }
+                return
+            }
+            connection.videoOrientation = orientation.captureOrientation
             if connection.isVideoMirroringSupported {
                 connection.automaticallyAdjustsVideoMirroring = false
                 connection.isVideoMirrored = false // Saved front video is natural; preview is mirrored.
@@ -338,15 +364,16 @@ final class CameraManager: NSObject, ObservableObject, AVCaptureFileOutputRecord
     private func checkSafety() {
         switch ProcessInfo.processInfo.thermalState {
         case .serious:
-            publish { $0.warning = "iPhone is getting hot. Recording can continue, but consider 1080p / 30 FPS for the next take." }
+            safetyWarning = "iPhone is getting hot. Recording can continue, but consider 1080p / 30 FPS for the next take."
         case .critical:
-            publish { $0.warning = "iPhone temperature is critical. Recording is stopping so the file can be saved. Let your iPhone cool down." }
+            safetyWarning = "iPhone temperature is critical. Recording is stopping so the file can be saved. Let your iPhone cool down."
             stopOnQueue()
-        default: break
+        default: safetyWarning = nil
         }
         if let currentURL, let free = Self.availableStorage(at: currentURL.deletingLastPathComponent()), free < 1024 * 1024 * 1024 {
-            publish { $0.warning = "Less than 1 GB is free. Storage may end this take soon. Stop and save when practical." }
+            if safetyWarning == nil { safetyWarning = "Less than 1 GB is free. Storage may end this take soon. Stop and save when practical." }
         }
+        publishWarnings()
     }
 
     private func handleRuntimeError(_ error: AVError?) {
@@ -377,6 +404,16 @@ final class CameraManager: NSObject, ObservableObject, AVCaptureFileOutputRecord
     private func publish(_ update: @escaping (CameraManager) -> Void) {
         DispatchQueue.main.async { update(self) }
     }
+    private func publishWarnings() {
+        let text = interruptionWarning ?? safetyWarning ?? formatWarning
+        publish { if $0.warning != text { $0.warning = text } }
+    }
+    private func publishMicrophoneStatus(interrupted: Bool = false) {
+        let status = MicrophoneStatus.resolve(authorization: AVCaptureDevice.authorizationStatus(for: .audio),
+            hasInput: audioInput != nil, sessionRunning: session.isRunning && audioActive,
+            interrupted: interrupted || session.isInterrupted)
+        publish { if $0.microphoneStatus != status { $0.microphoneStatus = status } }
+    }
     private func report(_ error: Error, explanation: String) {
         log.error("Camera failure: \(error.localizedDescription, privacy: .public)")
         publish { $0.isReady = false; $0.message = (error as? CaptureFailure)?.text ?? explanation }
@@ -393,5 +430,11 @@ extension UIInterfaceOrientation {
         default: return .portrait
         }
     }
-    var displayName: String { isLandscape ? "Landscape" : "Portrait" }
+    var displayName: String {
+        switch self {
+        case .landscapeLeft: return "Landscape left · 16:9"
+        case .landscapeRight: return "Landscape right · 16:9"
+        default: return "Portrait"
+        }
+    }
 }
