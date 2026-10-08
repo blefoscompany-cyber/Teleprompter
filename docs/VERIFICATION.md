@@ -72,3 +72,19 @@ The bundle identifier `local.teleprompter.camera`, script/settings keys, local r
 - Supported older orientation APIs produce deprecation warnings; no compiler/test failure occurred. Real rotation, recording playback, Portrait Orientation Lock behavior and long takes are still physical-device gates.
 
 Subsequent documentation-only commits do not rebuild the app; their application source/project configuration is identical to the successful build above. Update using README's in-place AltStore instructions; do not uninstall the existing app.
+
+## Version 1.2 front-camera recording mirroring — 8 October 2026
+
+The native movie connection now uses the locally persisted **Mirror Recorded Video** setting (default ON for new and existing installations). Only the queue-owned front camera can request mirroring; rear takes explicitly remain non-mirrored. The preference is captured when Record is pressed, automatic output mirroring is disabled, and orientation continues to be set from the same actual interface orientation before recording. Preview mirroring and the existing orientation mapping are unchanged. Unsupported requested mirroring produces an actionable error instead of silently recording the wrong appearance.
+
+The bundle identifier, old script/settings keys, recording folder, camera format selection, audio and Photos saving are preserved. Three regression cases cover fresh-install defaults, upgrade defaults and both persisted choices without losing script/settings, and the front/rear policy matrix. Local checks: 20 Swift files parsed without grammar errors, nine Python utility tests passed, and `git diff --check` passed. These are not Apple SDK compilation checks.
+
+**REQUIRES REAL-DEVICE VERIFICATION:** recorded mirror ON/OFF appearance for front portrait and both landscapes, rear remaining non-mirrored, unchanged preview, setting persistence, in-place update/data retention, and continued audio/Photos/4K60 operation. Check Photos and an exported movie on Windows using a private asymmetric object or printed word; the simulator cannot establish recorded appearance.
+
+### Successful build and independent artifact inspection
+
+- Run: https://github.com/blefoscompany-cyber/Teleprompter/actions/runs/37748599481 — built `00ccbf66cd4dae71fbd71b55aad626a705258b24` on main with Xcode 16.4 and the physical iPhoneOS SDK, signing disabled.
+- Actual job logs inspected: **28 simulator XCTest cases passed**, including all three new mirror-setting regression cases; nine build-tool tests, physical-iPhone Release compilation, IPA packaging and upload passed.
+- Downloaded [Teleprompter-IPA artifact](https://github.com/blefoscompany-cyber/Teleprompter/actions/runs/37748599481/artifacts/11537485355), ID `11537485355`, size `279924` bytes. Its outer ZIP digest matches GitHub: `c2a841d7b96e4844447cf7659548558f954dd353b2ec548e2ee7a901035cf1a9`.
+- Independent inspection confirms **version 1.2, build 3**, unchanged `local.teleprompter.camera`, iPhone family `[1]`, expected Payload/permissions/orientations, and an unsigned arm64 physical-iOS Mach-O executable. IPA SHA-256: `1d10d5e77883b44cf53ea787f2c238fd55d1ddd1b1c1c1b90361c3102dafab08`.
+- Subsequent documentation-only commits preserve the exact application source/configuration from this run. No actual front-camera recorded appearance or orientation behavior is claimed verified by these checks.

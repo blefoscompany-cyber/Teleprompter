@@ -2,7 +2,7 @@
 
 A personal iPhone camera app: read a scrolling script over the live preview while recording camera video and microphone audio. The script and buttons do **not** appear in the saved video. There is no backend, account, tracking, watermark, paid API, or recording-duration timer.
 
-**Current status:** The owner installed V1 through AltStore on an iPhone 16 and confirmed video, microphone audio, and saving to Photos. Version 1.1 addresses landscape layout, automatic scrolling and microphone status. [Version 1.1 build and IPA](https://github.com/blefoscompany-cyber/Teleprompter/actions/runs/37739554005) passed all 25 app tests. These fixes require real-device verification; see [verification status](docs/VERIFICATION.md) and [iPhone checklist](docs/QA.md).
+**Current status:** The owner installed V1 through AltStore on an iPhone 16 and confirmed video, microphone audio, and Photos saving. [Version 1.2 build and IPA](https://github.com/blefoscompany-cyber/Teleprompter/actions/runs/37748599481) passed all 28 app tests and independent IPA checks. Version 1.2 adds **Mirror Recorded Video**, enabled by default for front recordings. Its recorded appearance and the earlier landscape/scrolling fixes require real-device verification; see [verification status](docs/VERIFICATION.md) and [iPhone checklist](docs/QA.md).
 
 ## What you need — no Mac
 
@@ -130,7 +130,7 @@ Trusting the developer identity and Developer Mode are separate iOS settings. Yo
 
 **Local transfer if File Sharing isn't available:** On Windows, put just the IPA in a new folder. Right-click the folder → **Properties → Sharing → Advanced Sharing**, select **Share this folder**, give it a name such as `TeleprompterIPA`, and keep access limited to your Windows account. Note your PC name in **Settings → System → About**. On the iPhone, open **Files → Browse → … → Connect to Server**. Enter `smb://YOUR-PC-NAME`, choose **Registered User**, and sign in with the Windows account's network credentials (not its Windows Hello PIN). Open the share and copy the IPA to **On My iPhone**. Both devices must be on the same private home network. Turn off the temporary folder share after transfer. This transfer uses no cloud service, API, or hosting subscription. Ask Codex for help if Windows network credentials/sharing are unfamiliar; don't share the password in chat.
 
-### Update V1 to version 1.1 without deleting it
+### Update to version 1.2 without deleting it
 
 1. Download and extract the new **Teleprompter-IPA** artifact as described above. Transfer its **Teleprompter.ipa** to Files on your iPhone using the method that worked for V1.
 2. Keep AltServer running on Windows and connect/unlock your iPhone. Keep **the same Apple ID** signed into AltStore.
